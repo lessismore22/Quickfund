@@ -85,7 +85,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', default='quickfund_db'),
         'USER': os.environ.get('DB_USER', default='quickfund_user'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', default='TheGameisM!ne2025!'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', default=''),
         'HOST': os.environ.get('DB_HOST', default='localhost'),
         'PORT': os.environ.get('DB_PORT', default='5432'),
     }

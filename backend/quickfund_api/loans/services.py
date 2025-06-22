@@ -1,10 +1,9 @@
 import logging
 from decimal import Decimal
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 from .models import Loan, CreditAssessment
 
-User = get_user_model()
+
 logger = logging.getLogger(__name__)
 
 class CreditScoringService:
@@ -158,7 +157,7 @@ class LoanProcessingService:
                 loan.save()
                 
                 # Send approval notification
-                from notifications import send_loan_approval_notification
+                from quickfund_api.notifications.tasks import send_loan_approval_notification
                 send_loan_approval_notification.delay(loan.id)
             
             logger.info(f"Loan {loan.id} processed with score {credit_score}")
@@ -177,12 +176,11 @@ class LoanProcessingService:
             loan.balance = loan.total_repayment
             loan.due_date = timezone.now().date() + timezone.timedelta(days=loan.tenure_days)
             loan.save()
-            
             # Send approval notification
-            from .tasks import send_loan_approval_notification
+            from quickfund_api.notifications.tasks import send_loan_approval_notification
             send_loan_approval_notification.delay(loan.id)
             
         elif loan.status == 'rejected':
             # Send rejection notification
-            from .notifications import send_loan_rejection_notification
+            from quickfund_api.notifications.tasks import send_loan_rejection_notification
             send_loan_rejection_notification.delay(loan.id)
