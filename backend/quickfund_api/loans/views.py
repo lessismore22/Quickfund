@@ -1,44 +1,12 @@
-from django.shortcuts import get_object_or_404, render
 from rest_framework import generics, status, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
-from django.contrib.auth import get_user_model
-from backend.quickfund_api.services import LoanProcessingService
-from quickfund_api.notifications import send_welcome_notification
-from rest_framework.throttling import UserRateThrottle, throttle_classes
+from rest_framework.throttling import UserRateThrottle
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from .serializers import LoanApplicationSerializer, LoanDetailSerializer, LoanApprovalSerializer
 from .models import Loan
-from .serializers import (
-    UserRegistrationSerializer, 
-    UserProfileSerializer,
-    CustomTokenObtainPairSerializer
-)
-
-User = get_user_model()
-
-
-class UserRegistrationView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserRegistrationSerializer
-    permission_classes = [permissions.AllowAny]
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        
-        # Send welcome SMS/Email
-
-        send_welcome_notification.delay(user.id)
-        
-        return Response({
-            'message': 'Registration successful',
-            'user_id': user.id
-        }, status=status.HTTP_201_CREATED)
-
-
+from .serializers import LoanApplicationSerializer, LoanDetailSerializer, LoanApprovalSerializer
+from .services import CreditScoringService, LoanProcessingService
 
 class LoanApplicationThrottle(UserRateThrottle):
     scope = 'loan_application'
