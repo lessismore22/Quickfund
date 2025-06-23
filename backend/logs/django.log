@@ -14,3 +14,127 @@ Not Found: /favicon.ico
 Watching for file changes with StatReloader
 Watching for file changes with StatReloader
 "GET / HTTP/1.1" 200 12068
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/auth.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/users.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/loans.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/payments/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/payments/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/payments/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/payments.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/payments.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/notifications/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/notifications.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/admin.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/admin.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/admin.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/admin.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/admin.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/api.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/system.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/system.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /
+"GET / HTTP/1.1" 404 3482
+Not Found: /favicon.ico
+"GET /favicon.ico HTTP/1.1" 404 3550
+Not Found: /api/vi/register
+"GET /api/vi/register HTTP/1.1" 404 3566
+Not Found: /api/vi/loans
+"GET /api/vi/loans HTTP/1.1" 404 3554
+Not Found: /api/v1/loans
+"GET /api/v1/loans HTTP/1.1" 404 5142
+Not Found: /api/v1/loans/
+"GET /api/v1/loans/ HTTP/1.1" 404 7307
+Not Found: /api/v1/users
+"GET /api/v1/users HTTP/1.1" 404 5142
+/root/Quickfund/backend/urls/users.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/users.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/users.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/users.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /api/v1/users
+"GET /api/v1/users HTTP/1.1" 404 5142
+Forbidden (CSRF cookie not set.): /api/v1/users
+"POST /api/v1/users HTTP/1.1" 403 2855
+Forbidden (CSRF cookie not set.): /api/v1/auth/register
+"POST /api/v1/auth/register HTTP/1.1" 403 2855
+Forbidden (CSRF cookie not set.): /api/v1/auth/login
+"POST /api/v1/auth/login HTTP/1.1" 403 2855
+Not Found: /
+"GET / HTTP/1.1" 404 3482
+Not Found: /api/v1
+"GET /api/v1 HTTP/1.1" 404 3530
