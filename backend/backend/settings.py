@@ -57,7 +57,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'backend.urls'
+ROOT_URLCONF = 'urls.main'
 
 TEMPLATES = [
     {
@@ -252,8 +252,7 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', default='noreply@quickcash.ng')
 
 # Logging Configuration
-import os
-from pathlib import Path
+
 
 # Make sure logs directory exists
 LOGS_DIR = BASE_DIR / 'logs'
