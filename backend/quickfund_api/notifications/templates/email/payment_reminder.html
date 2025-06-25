@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Reminder - QuickCash</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            background-color: #f39c12;
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            margin: -20px -20px 20px -20px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .reminder-icon {
+            font-size: 48px;
+            margin: 10px 0;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .reminder-message {
+            font-size: 20px;
+            color: #f39c12;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .payment-details {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .detail-value {
+            color: #34495e;
+        }
+        .amount-due {
+            font-size: 24px;
+            color: #e74c3c;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #ffeaa7;
+            border-radius: 5px;
+        }
+        .days-remaining {
+            font-size: 18px;
+            color: #e17055;
+            text-align: center;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .urgent-notice {
+            background-color: #ffebee;
+            border: 2px solid #e74c3c;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .overdue-notice {
+            background-color: #ffcdd2;
+            border: 2px solid #d32f2f;
+            color: #b71c1c;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .payment-methods {
+            background-color: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .method-list {
+            list-style: none;
+            padding: 0;
+        }
+        .method-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #c8e6c9;
+        }
+        .method-list li:last-child {
+            border-bottom: none;
+        }
+        .footer {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">QuickCash</div>
+            <div class="reminder-icon">⏰</div>
+            <h2>Payment Reminder</h2>
+        </div>
+        
+        <div class="content">
+            <div class="reminder-message">
+                {% if days_until_due > 0 %}
+                    Payment Due in {{ days_until_due }} day{{ days_until_due|pluralize }}
+                {% elif days_until_due == 0 %}
+                    Payment Due Today
+                {% else %}
+                    Payment is {{ days_overdue }} day{{ days_overdue|pluralize }} Overdue
+                {% endif %}
+            </div>
+            
+            <p>Dear {{ loan.user.first_name }},</p>
+            
+            {% if days_until_due > 0 %}
+                <p>This is a friendly reminder that your loan payment is due soon. Please ensure you have sufficient funds in your account for the automatic deduction or make a manual payment.</p>
+            {% elif days_until_due == 0 %}
+                <p>Your loan payment is due today. Please make your payment immediately to avoid late fees and maintain your credit score.</p>
+            {% else %}
+                <p>Your loan payment is overdue. Please make your payment immediately to avoid additional charges and potential impact on your credit score.</p>
+            {% endif %}
+            
+            <div class="amount-due">
+                Amount Due: ₦{{ amount_due|floatformat:2 }}
+            </div>
+            
+            {% if days_until_due > 0 %}
+                <div class="days-remaining">
+                    Due in {{ days_until_due }} day{{ days_until_due|pluralize }}
+                </div>
+            {% elif days_until_due == 0 %}
+                <div class="urgent-notice">
+                    ⚠️ PAYMENT DUE TODAY ⚠️
+                </div>
+            {% else %}
+                <div class="overdue-notice">
+                    🚨 PAYMENT OVERDUE - IMMEDIATE ACTION REQUIRED 🚨
+                </div>
+            {% endif %}
+            
+            <div class="payment-details">
+                <h3>Payment Details:</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Loan ID:</span>
+                    <span class="detail-value">{{ loan.id }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Due Date:</span>
+                    <span class="detail-value">{{ due_date|date:"F d, Y" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Principal Amount:</span>
+                    <span class="detail-value">₦{{ principal_amount|floatformat:2 }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Interest:</span>
+                    <span class="detail-value">₦{{ interest_amount|floatformat:2 }}</span>
+                </div>
+                {% if late_fee > 0 %}
+                <div class="detail-row">
+                    <span class="detail-label">Late Fee:</span>
+                    <span class="detail-value">₦{{ late_fee|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                <div class="detail-row">
+                    <span class="detail-label"><strong>Total Due:</strong></span>
+                    <span class="detail-value"><strong>₦{{ amount_due|floatformat:2 }}</strong></span>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="#" class="cta-button">Make Payment Now</a>
+            </div>
+            
+            <div class="payment-methods">
+                <h3>Payment Methods:</h3>
+                <ul class="method-list">
+                    <li>🏦 Bank Transfer</li>
+                    <li>💳 Debit Card</li>
+                    <li>📱 USSD (*737*)</li>
+                    <li>💰 Bank Deposit</li>
+                    <li>🏪 QuickCash Agent</li>
+                </ul>
+            </div>
+            
+            {% if days_overdue > 0 %}
+            <div class="overdue-notice">
+                <strong>Consequences of Non-Payment:</strong><br>
+                • Additional late fees<br>
+                • Negative impact on credit score<br>
+                • Restriction on future loans<br>
+                • Possible legal action
+            </div>
+            {% endif %}
+            
+            <p><strong>Auto-Pay Setup:</strong><br>
+            Avoid missing payments by setting up automatic deductions from your bank account. Visit your dashboard to enable this feature.</p>
+            
+            <p><strong>Having Difficulty?</strong><br>
+            If you're experiencing financial difficulties, please contact us immediately at support@quickcash.ng or call +234-800-QUICK-CASH. We may be able to work out a payment plan.</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {{ current_year }} QuickCash. All rights reserved.</p>
+            <p>This email was sent to {{ loan.user.email }}.</p>
+        </div>
+    </div>
+</body>
+</html>

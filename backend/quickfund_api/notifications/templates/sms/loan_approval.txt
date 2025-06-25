@@ -1,0 +1,1 @@
+APPROVED! Your QuickCash loan of N{{ loan.amount|floatformat:0 }} has been approved. Funds will be credited within 2-4hrs. Monthly payment: N{{ monthly_payment|floatformat:0 }}. First payment due: {{ first_payment_date|date:"d/m/Y" }}. Loan ID: {{ loan.id }}

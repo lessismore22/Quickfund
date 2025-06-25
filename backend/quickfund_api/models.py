@@ -1,4 +1,4 @@
-from .users.models import User
+from .users.models import CustomUser
 from .loans.models import Loan, CreditAssessment
 from .notifications.models import Notification
 from .payments.models import Repayment

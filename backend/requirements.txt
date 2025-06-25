@@ -11,3 +11,7 @@ django-redis-6.2.0
 drf-spectacular-0.29.1
 django-cors-headers==3.18.0
 django-prometheus-2.4.0
+requests-2.32.4
+django-phonenumber-field-8.1.0
+drf-yasg-1.21.10
+coreschema-0.0.4

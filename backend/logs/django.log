@@ -138,3 +138,356 @@ Not Found: /
 "GET / HTTP/1.1" 404 3482
 Not Found: /api/v1
 "GET /api/v1 HTTP/1.1" 404 3530
+Watching for file changes with StatReloader
+Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/cache.py", line 29, in _decorator
+    return method(self, *args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/cache.py", line 99, in _get
+    return self.client.get(key, default=default, version=version, client=client)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/client/default.py", line 300, in get
+    raise ConnectionInterrupted(connection=client) from e
+django_redis.exceptions.ConnectionInterrupted: Redis ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 503, in dispatch
+    self.initial(request, *args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 422, in initial
+    self.check_throttles(request)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 365, in check_throttles
+    if not throttle.allow_request(request, self):
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/throttling.py", line 123, in allow_request
+    self.history = self.cache.get(self.key, [])
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/cache.py", line 92, in get
+    value = self._get(key, default, version, client)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/cache.py", line 36, in _decorator
+    raise e.__cause__  # noqa: B904
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/client/default.py", line 298, in get
+    value = client.get(key)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/commands/core.py", line 1829, in get
+    return self.execute_command("GET", name, keys=[name])
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/client.py", line 623, in execute_command
+    return self._execute_command(*args, **options)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/client.py", line 629, in _execute_command
+    conn = self.connection or pool.get_connection()
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/utils.py", line 191, in wrapper
+    return func(*args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/connection.py", line 1530, in get_connection
+    connection.connect()
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/connection.py", line 379, in connect
+    self.connect_check_health(check_health=True)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/connection.py", line 391, in connect_check_health
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+"POST /api/docs/ HTTP/1.1" 500 165637
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Not Found: /
+"GET / HTTP/1.1" 404 3482
+Internal Server Error: /api/schema/
+Traceback (most recent call last):
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/cache.py", line 29, in _decorator
+    return method(self, *args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/cache.py", line 99, in _get
+    return self.client.get(key, default=default, version=version, client=client)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/client/default.py", line 300, in get
+    raise ConnectionInterrupted(connection=client) from e
+django_redis.exceptions.ConnectionInterrupted: Redis ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 503, in dispatch
+    self.initial(request, *args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 422, in initial
+    self.check_throttles(request)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/views.py", line 365, in check_throttles
+    if not throttle.allow_request(request, self):
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/rest_framework/throttling.py", line 123, in allow_request
+    self.history = self.cache.get(self.key, [])
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/cache.py", line 92, in get
+    value = self._get(key, default, version, client)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/cache.py", line 36, in _decorator
+    raise e.__cause__  # noqa: B904
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/django_redis/client/default.py", line 298, in get
+    value = client.get(key)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/commands/core.py", line 1829, in get
+    return self.execute_command("GET", name, keys=[name])
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/client.py", line 623, in execute_command
+    return self._execute_command(*args, **options)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/client.py", line 629, in _execute_command
+    conn = self.connection or pool.get_connection()
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/utils.py", line 191, in wrapper
+    return func(*args, **kwargs)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/connection.py", line 1530, in get_connection
+    connection.connect()
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/connection.py", line 379, in connect
+    self.connect_check_health(check_health=True)
+  File "/root/.local/share/virtualenvs/Quickfund-RiqBaKrC/lib/python3.10/site-packages/redis/connection.py", line 391, in connect_check_health
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+"GET /api/schema/ HTTP/1.1" 500 168418
+Watching for file changes with StatReloader
+"GET /api/schema/ HTTP/1.1" 200 26976
+"GET /api/schema/ HTTP/1.1" 200 26976
+"GET /api/schema/ HTTP/1.1" 200 26976
+Not Found: /
+"GET / HTTP/1.1" 404 3482
+Not Found: /api/docs
+"GET /api/docs HTTP/1.1" 404 3538
+Not Found: /api/v1
+"GET /api/v1 HTTP/1.1" 404 3530
+Not Found: /api/v1/loans
+"GET /api/v1/loans HTTP/1.1" 404 5142
+Not Found: /api/register
+"GET /api/register HTTP/1.1" 404 3554
+Forbidden (CSRF cookie not set.): /api/register/
+"POST /api/register/ HTTP/1.1" 403 2855
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+Forbidden (CSRF cookie not set.): /api/register/
+"POST /api/register/ HTTP/1.1" 403 2855
+Not Found: /
+"GET / HTTP/1.1" 404 3656
+/root/Quickfund/backend/urls/main.py changed, reloading.
+Watching for file changes with StatReloader
+Forbidden (CSRF cookie not set.): /api/login
+"POST /api/login HTTP/1.1" 403 2855
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+Forbidden (CSRF cookie not set.): /api/register/
+"POST /api/register/ HTTP/1.1" 403 2855
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+Forbidden (CSRF cookie not set.): /api/register/
+"POST /api/register/ HTTP/1.1" 403 2855
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+Forbidden (CSRF cookie not set.): /api/register/
+"POST /api/register/ HTTP/1.1" 403 2855
+Watching for file changes with StatReloader
+Forbidden (CSRF cookie not set.): /api/register/
+"POST /api/register/ HTTP/1.1" 403 2855
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+Forbidden (CSRF cookie not set.): /api/register/
+"POST /api/register/ HTTP/1.1" 403 2855
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+Not Found: /api/register/
+"POST /api/register/ HTTP/1.1" 404 3900
+Not Found: /api/login/
+"POST /api/login/ HTTP/1.1" 404 3888
+Not Found: /api/login/
+"GET /api/login/ HTTP/1.1" 404 3887
+Not Found: /api/login/
+"POST /api/login/ HTTP/1.1" 404 3888
+Not Found: /api/login/
+"POST /api/login/ HTTP/1.1" 404 3888
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/models.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/models.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/models.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/utils/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/models.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/models.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/models.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+                                                                                                                                                                     Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/utils/exceptions.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/utils/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/utils/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/utils/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/utils/constants.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/utils/helpers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/utils/helpers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/users/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/models.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/serializers.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/filters.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/models.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/models.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/filters.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/urls.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/urls.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/views.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/loans/urls.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/payments/models.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/payments/models.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/payments/services.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/notifications/tasks.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/notifications/services.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/notifications/services.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/notifications/tasks.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/notifications/tasks.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/notifications/tasks.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/notifications/tasks.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/payments/services.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/notifications/tasks.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/utils/exceptions.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/quickfund_api/utils/exceptions.py changed, reloading.
+Watching for file changes with StatReloader
+/root/Quickfund/backend/backend/settings.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader

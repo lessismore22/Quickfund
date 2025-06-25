@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Application Update - QuickCash</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            background-color: #e74c3c;
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            margin: -20px -20px 20px -20px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .status-message {
+            font-size: 20px;
+            color: #e74c3c;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .loan-details {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .detail-value {
+            color: #34495e;
+        }
+        .reasons-box {
+            background-color: #ffeaa7;
+            border: 1px solid #fdcb6e;
+            color: #6c5ce7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .improvement-tips {
+            background-color: #d5f4e6;
+            border: 1px solid #27ae60;
+            color: #2d3436;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .tips-list {
+            list-style: none;
+            padding: 0;
+        }
+        .tips-list li {
+            padding: 5px 0;
+            position: relative;
+            padding-left: 20px;
+        }
+        .tips-list li:before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">QuickCash</div>
+            <h2>Loan Application Update</h2>
+        </div>
+        
+        <div class="content">
+            <div class="status-message">
+                We're unable to approve your loan application at this time
+            </div>
+            
+            <p>Dear {{ loan.user.first_name }},</p>
+            
+            <p>Thank you for your interest in QuickCash. After careful review of your loan application, we're unable to approve it at this time.</p>
+            
+            <div class="loan-details">
+                <h3>Application Details:</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Application ID:</span>
+                    <span class="detail-value">{{ loan.id }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Requested Amount:</span>
+                    <span class="detail-value">₦{{ loan.amount|floatformat:2 }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Application Date:</span>
+                    <span class="detail-value">{{ loan.created_at|date:"F d, Y" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">{{ loan.status|capfirst }}</span>
+                </div>
+            </div>
+            
+            {% if rejection_reasons %}
+            <div class="reasons-box">
+                <h3>Factors considered in our decision:</h3>
+                <ul>
+                    {% for reason in rejection_reasons %}
+                    <li>{{ reason }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <div class="improvement-tips">
+                <h3>How to improve your chances for future applications:</h3>
+                <ul class="tips-list">
+                    <li>Complete your profile with accurate information</li>
+                    <li>Upload required documents (ID, bank statements, proof of income)</li>
+                    <li>Build a transaction history with smaller amounts first</li>
+                    <li>Maintain a good credit score</li>
+                    <li>Consider applying for a smaller loan amount</li>
+                    <li>Wait at least 30 days before reapplying</li>
+                </ul>
+            </div>
+            
+            <p><strong>Don't lose hope!</strong> Many of our successful customers were initially declined but later approved after improving their profiles and financial standing.</p>
+            
+            <div style="text-align: center;">
+                <a href="#" class="cta-button">Update My Profile</a>
+            </div>
+            
+            <p>You can reapply for a loan after 30 days. In the meantime, we encourage you to:</p>
+            <ul>
+                <li>Complete your profile verification</li>
+                <li>Link your bank account</li>
+                <li>Explore our financial literacy resources</li>
+            </ul>
+            
+            <p><strong>Questions?</strong><br>
+            Our customer support team is here to help you understand this decision and prepare for future applications. Contact us at support@quickcash.ng or call +234-800-QUICK-CASH.</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {{ current_year }} QuickCash. All rights reserved.</p>
+            <p>This email was sent to {{ loan.user.email }}.</p>
+        </div>
+    </div>
+</body>
+</html>
