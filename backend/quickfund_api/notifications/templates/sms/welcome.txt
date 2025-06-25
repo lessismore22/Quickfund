@@ -1,0 +1,1 @@
+Welcome to QuickCash, {{ user.first_name }}! Your account is now active. Get instant loans up to N500,000 with flexible repayment. Complete your profile to improve loan eligibility. Need help? Call +234-800-QUICK-CASH or visit quickcash.ng
