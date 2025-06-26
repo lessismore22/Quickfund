@@ -8,4 +8,4 @@ class NotificationsConfig(AppConfig):
     
     def ready(self):
         """Initialize the app when Django starts."""
-        import quickfund_api.notifications.signals
+        # import quickfund_api.notifications.signals

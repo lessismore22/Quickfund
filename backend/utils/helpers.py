@@ -532,3 +532,4 @@ def safe_divide(numerator: Union[int, float, Decimal], denominator: Union[int, f
     if denominator == 0:
         return default
     return numerator / denominator
+

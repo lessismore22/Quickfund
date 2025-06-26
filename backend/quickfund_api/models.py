@@ -4,4 +4,4 @@ from .notifications.models import Notification
 from .payments.models import Repayment
 
 
-__all__ = ['User']
+__all__ = ['CustomUser']

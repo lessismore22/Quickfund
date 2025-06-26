@@ -8,6 +8,70 @@ from quickfund_api.notifications.models import Notification, NotificationTemplat
 class NotificationFilter(django_filters.FilterSet):
     """Filter for Notification model"""
     
+ # Define choices directly in the filter instead of referencing the model
+    NOTIFICATION_TYPE_CHOICES = [
+        ('system', 'System'),
+        ('user', 'User'),
+        ('admin', 'Admin'),
+        ('campaign', 'Campaign'),
+        ('transaction', 'Transaction'),
+        ('funding', 'Funding'),
+        ('withdrawal', 'Withdrawal'),
+        ('kyc', 'KYC'),
+        ('security', 'Security'),
+        ('promotional', 'Promotional'),
+    ]
+
+    NOTIFICATION_TYPES = [
+        ('welcome', 'Welcome'),
+        ('loan_application', 'Loan Application'),
+        ('loan_approved', 'Loan Approved'),
+        ('loan_rejected', 'Loan Rejected'),
+        ('loan_disbursed', 'Loan Disbursed'),
+        ('payment_due', 'Payment Due'),
+        ('payment_overdue', 'Payment Overdue'),
+        ('payment_received', 'Payment Received'),
+        ('account_verification', 'Account Verification'),
+        ('password_reset', 'Password Reset'),
+        ('security_alert', 'Security Alert'),
+        ('system_maintenance', 'System Maintenance'),
+    ]
+    
+    CHANNELS = [
+        ('email', 'Email'),
+        ('sms', 'SMS'),
+        ('push', 'Push Notification'),
+        ('in_app', 'In-App Notification'),
+    ]
+
+    # Status choices
+    STATUS_CHOICES = [
+        ('unread', 'Unread'),
+        ('read', 'Read'),
+        ('archived', 'Archived'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+        
+
+    notification_type = django_filters.ChoiceFilter(
+        choices=NOTIFICATION_TYPE_CHOICES,  # Use the local choices
+        empty_label="All Types"
+    )
+    
+    # Your other filters...
+    is_read = django_filters.BooleanFilter()
+    created_at = django_filters.DateFromToRangeFilter()
+    
+    class Meta:
+        model = Notification
+        fields = ['notification_type', 'is_read']
+
     # Status filters
     status = django_filters.ChoiceFilter(
         choices=Notification.STATUS_CHOICES,

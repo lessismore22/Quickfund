@@ -11,7 +11,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from datetime import timedelta
 import random
-
+from django.views.decorators.csrf import csrf_exempt
 from .models import AbstractUser, CustomUser
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
@@ -20,7 +20,7 @@ from .serializers import (
 )
 from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .tasks import send_verification_sms, send_welcome_email
-from ..utils.helpers import generate_otp
+from utils.helpers import generate_otp
 
 
 class RegisterView(generics.CreateAPIView):

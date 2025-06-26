@@ -9,7 +9,7 @@ from quickfund_api.notifications.models import Notification, NotificationTemplat
 from quickfund_api.notifications.services import notification_service, email_service, sms_service
 from quickfund_api.users.models import CustomUser
 from quickfund_api.loans.models import Loan
-from quickfund_api.utils.exceptions import NotificationError
+from utils.exceptions import NotificationError
 
 
 logger = logging.getLogger(__name__)

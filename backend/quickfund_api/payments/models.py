@@ -4,7 +4,8 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.utils import timezone
-from ..utils.constants import PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES
+from django.db.models import Sum
+from utils.constants import PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES
 
 User = get_user_model()
 
@@ -94,7 +95,7 @@ class Transaction(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     # Optional: Link to a loan if this transaction is loan-related
-    loan = models.ForeignKey('loans.Loan', on_delete=models.CASCADE, null=True, blank=True)
+    loan = models.ForeignKey('Loan', on_delete=models.CASCADE, null=True, blank=True)
     
     def __str__(self):
         return f"{self.user.username} - {self.transaction_type} - {self.amount}"
@@ -163,11 +164,14 @@ class PaymentMethod(models.Model):
         super().save(*args, **kwargs)
 
 
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import TemplateView
+
 class Payment(models.Model):
     """Model for payment transactions"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
-    loan = models.ForeignKey('loans.Loan', on_delete=models.CASCADE, related_name='payments', null=True, blank=True)
+    loan = models.ForeignKey('Loan', on_delete=models.CASCADE, related_name='payment_records', null=True, blank=True)
     repayment = models.ForeignKey('Repayment', on_delete=models.CASCADE, related_name='payments', null=True, blank=True)
     
     # Payment details
@@ -253,7 +257,7 @@ class Payment(models.Model):
 class Repayment(models.Model):
     """Model for loan repayments"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    loan = models.ForeignKey('loans.Loan', on_delete=models.CASCADE, related_name='repayments')
+    loan = models.ForeignKey('Loan', on_delete=models.CASCADE, related_name='repayments')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='repayments')
     
     # Repayment details
@@ -449,3 +453,177 @@ class PaymentWebhook(models.Model):
         """Mark webhook processing as failed"""
         self.error_message = error_message
         self.save()
+
+
+class PaymentSchedule(models.Model):
+    """
+    Model to represent payment schedules for loans, subscriptions, or recurring payments
+    """
+    
+    # Schedule identification
+    schedule_id = models.CharField(max_length=100, unique=True, help_text="Unique identifier for the payment schedule")
+    
+    # Related entities
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_schedules')
+    payment = models.ForeignKey('Payment', on_delete=models.CASCADE, related_name='schedules', null=True, blank=True)
+    
+    # Schedule details
+    title = models.CharField(max_length=200, help_text="Title or description of the payment schedule")
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, help_text="Total amount to be paid")
+    amount_per_installment = models.DecimalField(max_digits=15, decimal_places=2, help_text="Amount per installment")
+    currency = models.CharField(max_length=3, default='USD', help_text="Currency code (e.g., USD, EUR, NGN)")
+    
+    # Schedule timing
+    frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('daily', 'Daily'),
+            ('weekly', 'Weekly'),
+            ('bi_weekly', 'Bi-Weekly'),
+            ('monthly', 'Monthly'),
+            ('quarterly', 'Quarterly'),
+            ('semi_annual', 'Semi-Annual'),
+            ('annual', 'Annual'),
+        ],
+        default='monthly',
+        help_text="Frequency of payments"
+    )
+    
+    total_installments = models.PositiveIntegerField(help_text="Total number of installments")
+    completed_installments = models.PositiveIntegerField(default=0, help_text="Number of completed installments")
+    
+    # Important dates
+    start_date = models.DateField(help_text="Date when the payment schedule starts")
+    next_payment_date = models.DateField(help_text="Date of the next scheduled payment")
+    end_date = models.DateField(null=True, blank=True, help_text="Expected end date of the payment schedule")
+    
+    # Status and tracking
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('active', 'Active'),
+            ('paused', 'Paused'),
+            ('completed', 'Completed'),
+            ('cancelled', 'Cancelled'),
+            ('overdue', 'Overdue'),
+        ],
+        default='active'
+    )
+    
+    # Payment details
+    payment_method = models.ForeignKey('PaymentMethod', on_delete=models.SET_NULL, null=True, blank=True)
+    auto_pay_enabled = models.BooleanField(default=False, help_text="Whether automatic payments are enabled")
+    
+    # Additional information
+    description = models.TextField(blank=True, help_text="Additional description or notes")
+    late_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text="Late fee amount")
+    grace_period_days = models.PositiveIntegerField(default=0, help_text="Grace period in days before late fees apply")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_payment_schedules')
+    
+    class Meta:
+        db_table = 'payment_schedule_view'
+        verbose_name = 'Payment Schedule'
+        verbose_name_plural = 'Payment Schedules'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['next_payment_date']),
+            models.Index(fields=['schedule_id']),
+            models.Index(fields=['status', 'next_payment_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.user.username} ({self.status})"
+    
+    @property
+    def remaining_installments(self):
+        """Calculate remaining installments"""
+        return max(0, self.total_installments - self.completed_installments)
+    
+    @property
+    def remaining_amount(self):
+        """Calculate remaining amount to be paid"""
+        return self.amount_per_installment * self.remaining_installments
+    
+    @property
+    def completion_percentage(self):
+        """Calculate completion percentage"""
+        if self.total_installments == 0:
+            return 0
+        return (self.completed_installments / self.total_installments) * 100
+    
+    @property
+    def is_overdue(self):
+        """Check if the payment schedule is overdue"""
+        return self.next_payment_date < timezone.now().date() and self.status == 'active'
+    
+    def calculate_next_payment_date(self):
+        """Calculate the next payment date based on frequency"""
+        from dateutil.relativedelta import relativedelta
+        
+        current_date = self.next_payment_date
+        
+        if self.frequency == 'daily':
+            return current_date + timezone.timedelta(days=1)
+        elif self.frequency == 'weekly':
+            return current_date + timezone.timedelta(weeks=1)
+        elif self.frequency == 'bi_weekly':
+            return current_date + timezone.timedelta(weeks=2)
+        elif self.frequency == 'monthly':
+            return current_date + relativedelta(months=1)
+        elif self.frequency == 'quarterly':
+            return current_date + relativedelta(months=3)
+        elif self.frequency == 'semi_annual':
+            return current_date + relativedelta(months=6)
+        elif self.frequency == 'annual':
+            return current_date + relativedelta(years=1)
+        
+        return current_date
+    
+    def mark_payment_completed(self):
+        """Mark a payment as completed and update the schedule"""
+        self.completed_installments += 1
+        
+        if self.completed_installments >= self.total_installments:
+            self.status = 'completed'
+        else:
+            self.next_payment_date = self.calculate_next_payment_date()
+            if self.is_overdue:
+                self.status = 'overdue'
+        
+        self.save()
+    
+    def pause_schedule(self):
+        """Pause the payment schedule"""
+        if self.status == 'active':
+            self.status = 'paused'
+            self.save()
+    
+    def resume_schedule(self):
+        """Resume a paused payment schedule"""
+        if self.status == 'paused':
+            self.status = 'active'
+            if self.is_overdue:
+                self.status = 'overdue'
+            self.save()
+    
+    def cancel_schedule(self):
+        """Cancel the payment schedule"""
+        self.status = 'cancelled'
+        self.save()
+    
+    def save(self, *args, **kwargs):
+        # Generate schedule_id if not provided
+        if not self.schedule_id:
+            import uuid
+            self.schedule_id = f"PS-{uuid.uuid4().hex[:8].upper()}"
+        
+        # Update status based on conditions
+        if self.status == 'active' and self.is_overdue:
+            self.status = 'overdue'
+        
+        super().save(*args, **kwargs)

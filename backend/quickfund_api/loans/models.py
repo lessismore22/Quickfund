@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -34,7 +35,7 @@ class Loan(models.Model):
         ('defaulted', 'Defaulted'),
     ]
 
-    borrower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='loans')
+    borrower = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='loans')
     loan_type = models.ForeignKey(LoanType, on_delete=models.CASCADE)
     loan_id = models.CharField(max_length=20, unique=True, blank=True)
     principal_amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -54,7 +55,7 @@ class Loan(models.Model):
     maturity_date = models.DateField(blank=True, null=True)
     
     # Additional fields
-    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_loans')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_loans')
     rejection_reason = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     
@@ -107,7 +108,7 @@ class LoanPayment(models.Model):
         ('late_fee', 'Late Fee'),
     ]
 
-    loan = models.ForeignKey(Loan, on_delete=models.CASCADE, related_name='payments')
+    loan = models.ForeignKey('Loan', on_delete=models.CASCADE, related_name='loan_payments')
     payment_id = models.CharField(max_length=20, unique=True, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     principal_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -157,7 +158,7 @@ class LoanApplication(models.Model):
         ('auto', 'Auto Loan'),
         ('mortgage', 'Mortgage'),
     ]
-    applicant = models.ForeignKey(User, on_delete=models.CASCADE)
+    applicant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     purpose = models.CharField(max_length=200)
     status = models.CharField(max_length=20, choices=[

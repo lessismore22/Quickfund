@@ -11,9 +11,8 @@ This package contains various utility modules including:
 """
 
 __version__ = '1.0.0'
-__author__ = 'QuickCash Development Team'
+__author__ = 'Charles@QuickFund Development Team'
 
-# Import commonly used utilities for easy access
 from .exceptions import (
     QuickCashException,
     ValidationError,
@@ -48,4 +47,6 @@ __all__ = [
     'generate_reference_number',
     'format_currency',
     'send_notification',
+    'PAYMENT_STATUS_CHOICES',
+    'PAYMENT_METHOD_CHOICES',
 ]

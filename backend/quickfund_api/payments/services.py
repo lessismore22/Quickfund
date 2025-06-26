@@ -20,12 +20,12 @@ from .integrations.base import BasePaymentProvider, PaymentError
 from quickfund_api.loans.models import Loan
 from quickfund_api.users.models import CustomUser
 from quickfund_api.notifications.tasks import send_payment_confirmation_task
-from quickfund_api.utils.exceptions import PaymentProcessingError
-from quickfund_api.utils.helpers import generate_transaction_reference
+from utils.exceptions import PaymentProcessingError
+from utils.helpers import generate_transaction_reference
 from decimal import Decimal
 from typing import Dict, Any, Optional
 from django.conf import settings
-from ..utils.exceptions import PaymentProcessingError, ValidationError      
+from utils.exceptions import PaymentProcessingError, ValidationError      
 
 logger = logging.getLogger(__name__)
 
