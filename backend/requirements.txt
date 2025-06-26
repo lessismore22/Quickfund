@@ -15,3 +15,5 @@ requests-2.32.4
 django-phonenumber-field-8.1.0
 drf-yasg-1.21.10
 coreschema-0.0.4
+python-dateutil
+Pillow-11.2.1

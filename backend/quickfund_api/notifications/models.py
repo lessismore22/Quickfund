@@ -31,6 +31,34 @@ class NotificationTemplate(models.Model):
         ('push', 'Push Notification'),
         ('in_app', 'In-App Notification'),
     ]
+
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    # Type choices
+    TYPE_CHOICES = [
+        ('system', 'System'),
+        ('user', 'User'),
+        ('admin', 'Admin'),
+        ('campaign', 'Campaign'),
+        ('transaction', 'Transaction'),
+        ('funding', 'Funding'),
+        ('withdrawal', 'Withdrawal'),
+        ('kyc', 'KYC'),
+        ('security', 'Security'),
+        ('promotional', 'Promotional'),
+    ]
+    
+    # Status choices
+    STATUS_CHOICES = [
+        ('unread', 'Unread'),
+        ('read', 'Read'),
+        ('archived', 'Archived'),
+    ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
@@ -58,6 +86,18 @@ class Notification(models.Model):
     NOTIFICATION_TYPES = NotificationTemplate.NOTIFICATION_TYPES
     CHANNELS = NotificationTemplate.CHANNELS
     
+    TYPE_CHOICES = [
+        ('info', 'Information'),
+        ('warning', 'Warning'),
+        ('error', 'Error'),
+        ('success', 'Success'),
+        ('payment', 'Payment'),
+        ('loan', 'Loan'),
+        ('reminder', 'Reminder'),
+        ('system', 'System'),
+        ('promotional', 'Promotional'),
+    ]
+
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('sent', 'Sent'),
@@ -211,3 +251,4 @@ class NotificationPreference(models.Model):
     
     def __str__(self):
         return f"{self.user.email} - {self.get_notification_type_display()} via {self.get_channel_display()}"
+    

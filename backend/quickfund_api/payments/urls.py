@@ -15,7 +15,7 @@ urlpatterns = [
     # Loan repayments
     path('loans/<int:loan_id>/repay/', views.LoanRepaymentView.as_view(), name='loan_repayment'),
     path('loans/<int:loan_id>/payment-methods/', views.PaymentMethodsView.as_view(), name='payment_methods'),
-    path('loans/<int:loan_id>/payment-history/', views.PaymentHistoryView.as_view(), name='payment_history'),
+    path('loans/<int:loan_id>/UserPaymentHistory/', views.UserPaymentHistoryView.as_view(), name='payment_history'),
     
     # Payment management
     path('history/', views.UserPaymentHistoryView.as_view(), name='user_payment_history'),
@@ -36,8 +36,8 @@ urlpatterns = [
     path('statistics/', views.PaymentStatisticsView.as_view(), name='payment_statistics'),
     
     # Payment analytics
-    path('analytics/revenue/', views.RevenueAnalyticsView.as_view(), name='revenue_analytics'),
-    path('analytics/defaults/', views.DefaultAnalyticsView.as_view(), name='default_analytics'),
+    # path('analytics/revenue/', views.RevenueAnalyticsView.as_view(), name='revenue_analytics'),
+    # path('analytics/defaults/', views.DefaultAnalyticsView.as_view(), name='default_analytics'),
     
     # Include router URLs
     path('', include(router.urls)),

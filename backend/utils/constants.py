@@ -284,3 +284,24 @@ def custom_exception_handler(exc, context):
         )
     
     return response
+
+# Payment status choices
+PAYMENT_STATUS_CHOICES = [
+    ('pending', 'Pending'),
+    ('processing', 'Processing'),
+    ('completed', 'Completed'),
+    ('failed', 'Failed'),
+    ('cancelled', 'Cancelled'),
+    ('refunded', 'Refunded'),
+]
+
+# Payment method choices
+PAYMENT_METHOD_CHOICES = [
+    ('card', 'Credit/Debit Card'),
+    ('bank_transfer', 'Bank Transfer'),
+    ('mobile_money', 'Mobile Money'),
+    ('paypal', 'PayPal'),
+    ('stripe', 'Stripe'),
+    ('flutterwave', 'Flutterwave'),
+    ('paystack', 'Paystack'),
+]

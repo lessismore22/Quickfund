@@ -1,3 +1,9 @@
+from decimal import Decimal
+import json
+from django.conf import settings
+from django.http import JsonResponse
+from django.urls import reverse
+import requests
 from rest_framework import status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,7 +13,9 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
 from django.utils import timezone
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
+
+from quickfund_api.payments.models import Payment
 
 from .models import Loan, LoanApplication
 from .serializers import (
@@ -19,14 +27,120 @@ from .serializers import (
 from .services import CreditScoringService
 from .filters import LoanFilter
 from .permissions import IsLoanOwnerOrAdmin, CanApproveLoan
-from quickfund_api.utils.decorators import validate_request_data
+from utils.decorators import validate_request_data
 # from utils.exceptions import LoanProcessingError
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views import View
 
 def validate_request_data(func):
-    """decorator replacement"""
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
-    return wrapper
+        """decorator replacement"""
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+
+class LoanRepaymentView(LoginRequiredMixin, View):
+    """
+    Handle loan repayment initiation
+    """
+    
+    def get(self, request, loan_id):
+        """Display loan repayment form"""
+        loan = get_object_or_404(Loan, id=loan_id, user=request.user)
+        
+        context = {
+            'loan': loan,
+            'balance': loan.balance,
+            'minimum_payment': loan.minimum_payment_amount,
+        }
+        
+        return render(request, 'payments/loan_repayment.html', context)
+    
+    def post(self, request, loan_id):
+        """Process loan repayment"""
+        loan = get_object_or_404(Loan, id=loan_id, user=request.user)
+        
+        try:
+            data = json.loads(request.body)
+            amount = Decimal(data.get('amount'))
+            
+            # Validate amount
+            if amount <= 0:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Invalid payment amount'
+                }, status=400)
+            
+            if amount > loan.balance:
+                amount = loan.balance  # Cap at outstanding balance
+            
+            # Create payment record
+            payment = Payment.objects.create(
+                user=request.user,
+                loan=loan,
+                amount=amount,
+                payment_type='loan_repayment',
+                status='pending',
+                reference=self.generate_payment_reference()
+            )
+            
+            # Initialize payment gateway
+            paystack_data = {
+                'amount': int(amount * 100),
+                'email': request.user.email,
+                'reference': payment.reference,
+                'callback_url': request.build_absolute_uri(
+                    reverse('paystack_callback')
+                ),
+                'metadata': {
+                    'payment_id': payment.id,
+                    'loan_id': loan.id,
+                    'payment_type': 'loan_repayment'
+                }
+            }
+            
+            response = self.initialize_paystack_payment(paystack_data)
+            
+            if response and response.get('status'):
+                payment.gateway_reference = response['data']['reference']
+                payment.save()
+                
+                return JsonResponse({
+                    'status': 'success',
+                    'payment_url': response['data']['authorization_url'],
+                    'reference': payment.reference
+                })
+            else:
+                payment.status = 'failed'
+                payment.save()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Failed to initialize payment'
+                }, status=400)
+                
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+    
+    def generate_payment_reference(self):
+        import uuid
+        return f"LOAN_{uuid.uuid4().hex[:10]}"
+    
+    def initialize_paystack_payment(self, data):
+        """Initialize payment with Paystack"""
+        url = "https://api.paystack.co/transaction/initialize"
+        headers = {
+            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            return response.json()
+        except requests.RequestException:
+            return None
+
 
 class LoanApplicationViewSet(ModelViewSet):
     """

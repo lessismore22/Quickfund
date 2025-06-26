@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Dict, Any, Optional
 from django.conf import settings
 from ..base import BasePaymentProvider
-from ...utils.exceptions import PaymentProcessingError, ValidationError
+from backend.utils.exceptions import PaymentProcessingError, ValidationError
 
 class PaystackProvider(BasePaymentProvider):
     """Paystack payment provider implementation"""

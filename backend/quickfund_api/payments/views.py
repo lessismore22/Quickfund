@@ -1,15 +1,29 @@
+import hashlib
+import hmac
+import logging
+from pyexpat.errors import messages
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
+from django.conf import settings
+from django.urls import reverse
+import requests
 from rest_framework import status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin
-from django.db.models import Sum, Q, Count
+from django.db.models import Sum, Q, Count, Avg
+from django.db import transaction
 from django.utils import timezone
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from .models import Repayment, Transaction, PaymentMethod
+from quickfund_api.payments.forms import LoanRepaymentForm
+from quickfund_api.loans import models
+
+from .models import Payment, Repayment, Transaction, PaymentMethod, PaymentSchedule
 from .serializers import (
     RepaymentSerializer, RepaymentCreateSerializer, RepaymentListSerializer,
     TransactionSerializer, PaymentMethodSerializer, PaymentSummarySerializer,
@@ -20,6 +34,7 @@ from quickfund_api.loans.models import Loan
 from utils.exceptions import PaymentProcessingError
 from utils.permissions import IsOwnerOrReadOnly
 from .services import get_payment_service, get_payment_processor_service
+# from .forms import LoanRepaymentForm
 
 
 class PaymentMethodViewSet(ModelViewSet):
@@ -396,10 +411,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
 from decimal import Decimal
 import json
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.views import View
+from django.views.generic import ListView, DetailView, TemplateView
 
 # Import the service functions instead of module-level instances
 
@@ -540,3 +558,902 @@ def process_refund(request):
             'status': 'error',
             'message': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+class PaymentInitiationView(LoginRequiredMixin, View):
+        """
+        Handle payment initiation - create payment record and redirect to payment gateway
+        """
+    
+        def post(self, request):
+            try:
+                data = json.loads(request.body)
+                amount = Decimal(data.get('amount'))
+                payment_type = data.get('payment_type', 'general')  # general, loan_repayment, etc.
+                loan_id = data.get('loan_id')  # if it's a loan repayment
+    
+                # Create payment record
+                payment = Payment.objects.create(
+                    user=request.user,
+                    amount=amount,
+                    payment_type=payment_type,
+                    status='pending',
+                    reference=self.generate_payment_reference(),
+                    loan_id=loan_id if loan_id else None
+                )
+    
+                # Initialize Paystack payment
+                paystack_data = {
+                    'amount': int(amount * 100),  # Paystack expects amount in kobo
+                    'email': request.user.email,
+                    'reference': payment.reference,
+                    'callback_url': request.build_absolute_uri(
+                        reverse('paystack_callback')
+                    ),
+                    'metadata': {
+                        'payment_id': payment.id,
+                        'user_id': request.user.id,
+                        'payment_type': payment_type
+                    }
+                }
+    
+                response = self.initialize_paystack_payment(paystack_data)
+    
+                if response and response.get('status'):
+                    payment.gateway_reference = response['data']['reference']
+                    payment.save()
+    
+                    return JsonResponse({
+                        'status': 'success',
+                        'payment_url': response['data']['authorization_url'],
+                        'reference': payment.reference
+                    })
+                else:
+                    payment.status = 'failed'
+                    payment.save()
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Failed to initialize payment'
+                    }, status=400)
+    
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': str(e)
+                }, status=400)
+    
+        def generate_payment_reference(self):
+            """Generate unique payment reference"""
+            import uuid
+            return f"PAY_{uuid.uuid4().hex[:10]}"
+    
+        def initialize_paystack_payment(self, data):
+            """Initialize payment with Paystack"""
+            url = "https://api.paystack.co/transaction/initialize"
+            headers = {
+                "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+                "Content-Type": "application/json"
+            }
+    
+            try:
+                response = requests.post(url, json=data, headers=headers)
+                return response.json()
+            except requests.RequestException:
+                return None
+
+
+class PaymentVerificationView(LoginRequiredMixin, View):
+    """
+    Verify payment status from payment gateway
+    """
+    
+    def get(self, request):
+        reference = request.GET.get('reference')
+        if not reference:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Payment reference is required'
+            }, status=400)
+        
+        try:
+            payment = get_object_or_404(Payment, reference=reference, user=request.user)
+            
+            # Verify with Paystack
+            verification_result = self.verify_paystack_payment(reference)
+            
+            if verification_result and verification_result.get('status'):
+                data = verification_result['data']
+                
+                if data['status'] == 'success':
+                    payment.status = 'completed'
+                    payment.gateway_reference = data['reference']
+                    payment.completed_at = datetime.now()
+                    payment.save()
+                    
+                    # Process loan repayment if applicable
+                    if payment.loan and payment.payment_type == 'loan_repayment':
+                        self.process_loan_repayment(payment)
+                    
+                    return JsonResponse({
+                        'status': 'success',
+                        'payment': {
+                            'id': payment.id,
+                            'amount': str(payment.amount),
+                            'status': payment.status,
+                            'reference': payment.reference
+                        }
+                    })
+                else:
+                    payment.status = 'failed'
+                    payment.save()
+                    
+                    return JsonResponse({
+                        'status': 'failed',
+                        'message': 'Payment was not successful'
+                    })
+            else:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Could not verify payment'
+                }, status=400)
+                
+        except Payment.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Payment not found'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+    
+    def verify_paystack_payment(self, reference):
+        """Verify payment with Paystack"""
+        url = f"https://api.paystack.co/transaction/verify/{reference}"
+        headers = {
+            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+        }
+        
+        try:
+            response = requests.get(url, headers=headers)
+            return response.json()
+        except requests.RequestException:
+            return None
+    
+    def process_loan_repayment(self, payment):
+        """Process loan repayment after successful payment"""
+        loan = payment.loan
+        loan.amount_paid += payment.amount
+        loan.balance -= payment.amount
+        
+        if loan.balance <= 0:
+            loan.status = 'paid'
+            loan.paid_at = datetime.now()
+        
+        loan.save()
+        
+        # # Create payment history record
+        # 
+        (
+        #     loan=loan,
+        #     payment=payment,
+        #     amount=payment.amount,
+        #     payment_date=payment.completed_at
+        )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PaystackCallbackView(View):
+    """
+    Handle Paystack webhook callbacks
+    """
+    
+    def post(self, request):
+        try:
+            # Verify webhook signature
+            signature = request.headers.get('x-paystack-signature')
+            if not self.verify_webhook_signature(request.body, signature):
+                return HttpResponse(status=400)
+            
+            data = json.loads(request.body)
+            event = data.get('event')
+            
+            if event == 'charge.success':
+                self.handle_successful_payment(data['data'])
+            elif event == 'charge.failed':
+                self.handle_failed_payment(data['data'])
+            
+            return HttpResponse(status=200)
+            
+        except Exception as e:
+            return HttpResponse(status=400)
+    
+    def verify_webhook_signature(self, payload, signature):
+        """Verify Paystack webhook signature"""
+        expected_signature = hmac.new(
+            settings.PAYSTACK_SECRET_KEY.encode('utf-8'),
+            payload,
+            hashlib.sha512
+        ).hexdigest()
+        
+        return hmac.compare_digest(signature, expected_signature)
+    
+    def handle_successful_payment(self, data):
+        """Handle successful payment webhook"""
+        reference = data.get('reference')
+        try:
+            payment = Payment.objects.get(reference=reference)
+            if payment.status == 'pending':
+                payment.status = 'completed'
+                payment.completed_at = datetime.now()
+                payment.save()
+                
+                # Process loan repayment if applicable
+                if payment.loan and payment.payment_type == 'loan_repayment':
+                    self.process_loan_repayment(payment)
+                    
+        except Payment.DoesNotExist:
+            pass
+    
+    def handle_failed_payment(self, data):
+        """Handle failed payment webhook"""
+        reference = data.get('reference')
+        try:
+            payment = Payment.objects.get(reference=reference)
+            payment.status = 'failed'
+            payment.save()
+        except Payment.DoesNotExist:
+            pass
+class PaymentMethodsView(LoginRequiredMixin, View):
+    """
+    Display available payment methods for a loan
+    """
+    
+    def get(self, request, loan_id):
+        loan = get_object_or_404(Loan, id=loan_id, user=request.user)
+        
+        # Available payment methods
+        payment_methods = [
+            {
+                'id': 'card',
+                'name': 'Debit/Credit Card',
+                'description': 'Pay with your debit or credit card',
+                'icon': 'card'
+            },
+            {
+                'id': 'bank_transfer',
+                'name': 'Bank Transfer',
+                'description': 'Transfer directly from your bank account',
+                'icon': 'bank'
+            },
+            {
+                'id': 'ussd',
+                'name': 'USSD',
+                'description': 'Pay using USSD code from your mobile phone',
+                'icon': 'phone'
+            }
+        ]
+        
+        context = {
+            'loan': loan,
+            'payment_methods': payment_methods,
+            'balance': loan.balance
+        }
+        
+        return render(request, 'payments/payment_methods.html', context)
+
+
+# class PaymentHistoryView(LoginRequiredMixin, ListView):
+#     """
+#     Display payment history for a specific loan
+#     """
+#     model = PaymentHistory
+#     template_name = 'payments/payment_history.html'
+#     context_object_name = 'payments'
+#     paginate_by = 20
+    
+#     def get_queryset(self):
+#         loan_id = self.kwargs['loan_id']
+#         loan = get_object_or_404(Loan, id=loan_id, user=self.request.user)
+#         return PaymentHistory.objects.filter(loan=loan).order_by('-payment_date')
+    
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         loan_id = self.kwargs['loan_id']
+#         context['loan'] = get_object_or_404(Loan, id=loan_id, user=self.request.user)
+#         return context
+
+class LoanRepaymentView(LoginRequiredMixin, View):
+    """Handle loan repayment"""
+    
+    def get(self, request, loan_id):
+        loan = get_object_or_404(Loan, id=loan_id, user=request.user)
+        form = LoanRepaymentForm(loan=loan)
+        
+        context = {
+            'loan': loan,
+            'form': form,
+            'outstanding_balance': loan.outstanding_balance,
+            'minimum_payment': loan.minimum_payment_amount
+        }
+        return render(request, 'payments/loan_repayment.html', context)
+    
+    def post(self, request, loan_id):
+        loan = get_object_or_404(Loan, id=loan_id, user=request.user)
+        form = LoanRepaymentForm(request.POST, loan=loan)
+        
+        if form.is_valid():
+            amount = form.cleaned_data['amount']
+            payment_method = form.cleaned_data['payment_method']
+            
+            # Create repayment record
+            # Generate unique payment reference
+            import uuid
+            reference = f"PAY_{uuid.uuid4().hex[:10]}"
+            payment = Payment.objects.create(
+                user=request.user,
+                loan=loan,
+                amount=amount,
+                reference=reference,
+                description=f'Loan repayment for loan #{loan.id}',
+                status='pending',
+                payment_method=payment_method
+            )
+            
+            if payment_method == 'paystack':
+                # Redirect to Paystack
+                return redirect('payment_initiate')
+            else:
+                # Handle other payment methods
+                messages.success(request, 'Repayment initiated successfully')
+                return redirect('payment_history', loan_id=loan.id)
+        
+        context = {
+            'loan': loan,
+            'form': form,
+            'outstanding_balance': loan.outstanding_balance
+        }
+        return render(request, 'payments/loan_repayment.html', context)
+
+
+class UserPaymentHistoryView(LoginRequiredMixin, ListView):
+    """
+    Display all payment history for the authenticated user
+    """
+    model = Payment
+    template_name = 'payments/user_payment_history.html'
+    context_object_name = 'payments'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        return Payment.objects.filter(
+            user=self.request.user
+        ).order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add summary statistics
+        user_payments = Payment.objects.filter(user=self.request.user)
+        context['total_payments'] = user_payments.filter(status='completed').count()
+        context['total_amount'] = user_payments.filter(
+            status='completed'
+        ).aggregate(
+            total=models.Sum('amount')
+        )['total'] or Decimal('0')
+        
+        return context
+
+
+class PaymentReceiptView(LoginRequiredMixin, DetailView):
+    """
+    Generate and display payment receipt
+    """
+    model = Payment
+    template_name = 'payments/payment_receipt.html'
+    context_object_name = 'payment'
+    
+    def get_queryset(self):
+        return Payment.objects.filter(user=self.request.user, status='completed')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        payment = self.get_object()
+        
+        context['receipt_number'] = f"RCP{payment.id:06d}"
+        context['issue_date'] = datetime.now()
+        
+        return context
+    
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        
+        # Add option to download as PDF if requested
+        if request.GET.get('format') == 'pdf':
+            return self.generate_pdf_receipt()
+        
+        return response
+    
+    def generate_pdf_receipt(self):
+        """Generate PDF receipt (requires reportlab or similar)"""
+        # Implementation depends on your PDF generation library
+        # This is a placeholder for PDF generation logic
+        from django.http import HttpResponse
+        
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="receipt_{self.get_object().id}.pdf"'
+        
+        # Generate PDF content here
+        # You would use reportlab, weasyprint, or similar library
+        
+        return response
+
+
+class PaymentRefundView(LoginRequiredMixin, View):
+    """Handle payment refund requests"""
+    
+    def get(self, request, pk):
+        payment = get_object_or_404(
+            Payment, 
+            id=pk, 
+            user=request.user, 
+            status='completed'
+        )
+        
+        context = {
+            'payment': payment,
+            'can_refund': payment.can_be_refunded(),
+            'refund_deadline': payment.refund_deadline()
+        }
+        return render(request, 'payments/payment_refund.html', context)
+    
+    def post(self, request, pk):
+        payment = get_object_or_404(
+            Payment, 
+            id=pk, 
+            user=request.user, 
+            status='completed'
+        )
+        
+        if not payment.can_be_refunded():
+            messages.error(request, 'This payment cannot be refunded')
+            return redirect('payment_receipt', pk=pk)
+        
+        reason = request.POST.get('reason', '')
+        
+        with transaction.atomic():
+            # Create refund request
+            payment.status = 'refund_requested'
+            payment.refund_reason = reason
+            payment.refund_requested_at = datetime.now()
+            payment.save()
+            
+            # Process refund with Paystack (if applicable)
+            if payment.payment_method == 'paystack' and payment.transaction_id:
+                self.process_paystack_refund(payment)
+        
+        messages.success(request, 'Refund request submitted successfully')
+        return redirect('user_payment_history')
+    
+    def process_paystack_refund(self, payment):
+        """Process refund through Paystack API"""
+        headers = {
+            'Authorization': f'Bearer {settings.PAYSTACK_SECRET_KEY}',
+            'Content-Type': 'application/json'
+        }
+        
+        refund_data = {
+            'transaction': payment.transaction_id,
+            'amount': int(payment.amount * 100)  # Convert to kobo
+        }
+        
+        try:
+            response = requests.post(
+                'https://api.paystack.co/refund',
+                data=json.dumps(refund_data),
+                headers=headers
+            )
+            response_data = response.json()
+            
+            if response_data['status']:
+                payment.refund_id = response_data['data']['id']
+                payment.status = 'refunded'
+                payment.save()
+            
+        except Exception as e:
+            # Log error and handle appropriately
+            pass
+
+class PaymentScheduleView(LoginRequiredMixin, TemplateView):
+        """View for displaying payment schedules"""
+        template_name = 'payments/schedule.html'
+        
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            
+            # Get payment schedules for the current user/student
+            if hasattr(self.request.user, 'student'):
+                schedules = PaymentSchedule.objects.filter(
+                    student=self.request.user.student
+                ).order_by('due_date')
+            else:
+                schedules = PaymentSchedule.objects.none()
+            
+            context.update({
+                'schedules': schedules,
+                'total_amount': schedules.aggregate(
+                    total=Sum('amount')
+                )['total'] or 0,
+                'pending_amount': schedules.filter(
+                    status='pending'
+                ).aggregate(
+                    total=Sum('amount')
+                )['total'] or 0
+            })
+            
+            return context
+
+class UpcomingPaymentsView(LoginRequiredMixin, ListView):
+    """View for upcoming payments"""
+    model = PaymentSchedule
+    template_name = 'payments/upcoming.html'
+    context_object_name = 'upcoming_payments'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        queryset = PaymentSchedule.objects.filter(
+            due_date__gte=timezone.now().date(),
+            status__in=['pending', 'partial']
+        ).order_by('due_date')
+        
+        # Filter by student if regular user
+        if hasattr(self.request.user, 'student'):
+            queryset = queryset.filter(student=self.request.user.student)
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add summary statistics
+        upcoming = self.get_queryset()
+        context.update({
+            'total_upcoming': upcoming.count(),
+            'total_amount': upcoming.aggregate(
+                total=Sum('amount')
+            )['total'] or 0,
+            'next_7_days': upcoming.filter(
+                due_date__lte=timezone.now().date() + timedelta(days=7)
+            ).count()
+        })
+        
+        return context
+
+class OverduePaymentsView(LoginRequiredMixin, ListView):
+    """View for overdue payments"""
+    model = PaymentSchedule
+    template_name = 'payments/overdue.html'
+    context_object_name = 'overdue_payments'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        queryset = PaymentSchedule.objects.filter(
+            due_date__lt=timezone.now().date(),
+            status__in=['pending', 'partial']
+        ).order_by('due_date')
+        
+        # Filter by student if regular user
+        if hasattr(self.request.user, 'student'):
+            queryset = queryset.filter(student=self.request.user.student)
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add summary statistics
+        overdue = self.get_queryset()
+        context.update({
+            'total_overdue': overdue.count(),
+            'total_amount': overdue.aggregate(
+                total=Sum('amount')
+            )['total'] or 0,
+            'oldest_overdue': overdue.first(),
+        })
+        
+        return context
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PaystackWebhookView(View):
+    """Handle Paystack webhook notifications"""
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            # Verify webhook signature
+            signature = request.headers.get('X-Paystack-Signature')
+            if not self._verify_signature(request.body, signature):
+                logger.warning("Invalid Paystack webhook signature")
+                return HttpResponse(status=400)
+            
+            # Parse webhook data
+            payload = json.loads(request.body.decode('utf-8'))
+            event = payload.get('event')
+            data = payload.get('data', {})
+            
+            # Handle different webhook events
+            if event == 'charge.success':
+                self._handle_successful_payment(data)
+            elif event == 'charge.failed':
+                self._handle_failed_payment(data)
+            elif event == 'transfer.success':
+                self._handle_transfer_success(data)
+            elif event == 'transfer.failed':
+                self._handle_transfer_failed(data)
+            
+            return HttpResponse(status=200)
+            
+        except Exception as e:
+            logger.error(f"Webhook processing error: {str(e)}")
+            return HttpResponse(status=500)
+    
+    def _verify_signature(self, payload, signature):
+        """Verify Paystack webhook signature"""
+        if not signature:
+            return False
+            
+        secret = getattr(settings, 'PAYSTACK_SECRET_KEY', '')
+        computed_signature = hmac.new(
+            secret.encode('utf-8'),
+            payload,
+            hashlib.sha512
+        ).hexdigest()
+        
+        return hmac.compare_digest(signature, computed_signature)
+    
+    def _handle_successful_payment(self, data):
+        """Handle successful payment webhook"""
+        reference = data.get('reference')
+        amount = Decimal(str(data.get('amount', 0))) / 100  # Convert from kobo
+        
+        try:
+            # Find and update payment record
+            payment = Payment.objects.get(reference=reference)
+            payment.status = 'completed'
+            payment.amount_paid = amount
+            payment.paid_at = timezone.now()
+            payment.save()
+            
+            # Update related schedule
+            if hasattr(payment, 'schedule'):
+                payment.schedule.status = 'paid'
+                payment.schedule.save()
+                
+        except Payment.DoesNotExist:
+            logger.error(f"Payment not found for reference: {reference}")
+    
+    def _handle_failed_payment(self, data):
+        """Handle failed payment webhook"""
+        reference = data.get('reference')
+        
+        try:
+            payment = Payment.objects.get(reference=reference)
+            payment.status = 'failed'
+            payment.failure_reason = data.get('gateway_response', 'Payment failed')
+            payment.save()
+            
+        except Payment.DoesNotExist:
+            logger.error(f"Payment not found for reference: {reference}")
+    
+    def _handle_transfer_success(self, data):
+        """Handle successful transfer webhook"""
+        # Implement transfer success logic
+        pass
+    
+    def _handle_transfer_failed(self, data):
+        """Handle failed transfer webhook"""
+        # Implement transfer failure logic
+        pass
+
+class TransactionListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """Admin view for listing all transactions"""
+    model = Transaction
+    template_name = 'payments/admin/transactions.html'
+    context_object_name = 'transactions'
+    paginate_by = 50
+    
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+    
+    def get_queryset(self):
+        queryset = Transaction.objects.select_related(
+            'payment', 'student'
+        ).order_by('-created_at')
+        
+        # Apply filters
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        date_from = self.request.GET.get('date_from')
+        if date_from:
+            queryset = queryset.filter(created_at__date__gte=date_from)
+        
+        date_to = self.request.GET.get('date_to')
+        if date_to:
+            queryset = queryset.filter(created_at__date__lte=date_to)
+        
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(reference__icontains=search) |
+                Q(student__user__email__icontains=search) |
+                Q(student__registration_number__icontains=search)
+            )
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add summary statistics
+        queryset = self.get_queryset()
+        context.update({
+            'total_transactions': queryset.count(),
+            'total_amount': queryset.aggregate(
+                total=Sum('amount')
+            )['total'] or 0,
+            'successful_count': queryset.filter(status='completed').count(),
+            'failed_count': queryset.filter(status='failed').count(),
+        })
+        
+        return context
+
+
+class PaymentReconciliationView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    """Admin view for payment reconciliation"""
+    template_name = 'payments/admin/reconciliation.html'
+    
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get date range from request
+        date_from = self.request.GET.get('date_from', 
+                                        (timezone.now() - timedelta(days=30)).date())
+        date_to = self.request.GET.get('date_to', timezone.now().date())
+        
+        # Payment reconciliation data
+        payments = Payment.objects.filter(
+            created_at__date__range=[date_from, date_to]
+        )
+        
+        transactions = Transaction.objects.filter(
+            created_at__date__range=[date_from, date_to]
+        )
+        
+        # Reconciliation summary
+        context.update({
+            'date_from': date_from,
+            'date_to': date_to,
+            'total_payments': payments.count(),
+            'total_transactions': transactions.count(),
+            'payments_amount': payments.aggregate(
+                total=Sum('amount')
+            )['total'] or 0,
+            'transactions_amount': transactions.aggregate(
+                total=Sum('amount')
+            )['total'] or 0,
+            'successful_payments': payments.filter(status='completed').count(),
+            'failed_payments': payments.filter(status='failed').count(),
+            'pending_payments': payments.filter(status='pending').count(),
+            'unmatched_payments': self._get_unmatched_payments(date_from, date_to),
+        })
+        
+        return context
+    
+    def _get_unmatched_payments(self, date_from, date_to):
+        """Get payments without matching transactions"""
+        return Payment.objects.filter(
+            created_at__date__range=[date_from, date_to],
+            transaction__isnull=True
+        )
+
+
+class PaymentStatisticsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    """Admin view for payment statistics"""
+    template_name = 'payments/admin/statistics.html'
+    
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get current period statistics
+        today = timezone.now().date()
+        current_month_start = today.replace(day=1)
+        last_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        
+        # Payment statistics
+        current_month_payments = Payment.objects.filter(
+            created_at__date__gte=current_month_start
+        )
+        
+        last_month_payments = Payment.objects.filter(
+            created_at__date__gte=last_month_start,
+            created_at__date__lt=current_month_start
+        )
+        
+        context.update({
+            # Current month stats
+            'current_month_total': current_month_payments.count(),
+            'current_month_amount': current_month_payments.aggregate(
+                total=Sum('amount')
+            )['total'] or 0,
+            'current_month_success_rate': self._calculate_success_rate(
+                current_month_payments
+            ),
+            
+            # Last month stats for comparison
+            'last_month_total': last_month_payments.count(),
+            'last_month_amount': last_month_payments.aggregate(
+                total=Sum('amount')
+            )['total'] or 0,
+            'last_month_success_rate': self._calculate_success_rate(
+                last_month_payments
+            ),
+            
+            # Overall statistics
+            'total_students_paid': Payment.objects.filter(
+                status='completed'
+            ).values('student').distinct().count(),
+            
+            'average_payment_amount': Payment.objects.filter(
+                status='completed'
+            ).aggregate(
+                avg=Avg('amount')
+            )['avg'] or 0,
+            
+            # Payment method breakdown
+            'payment_methods': self._get_payment_method_stats(),
+            
+            # Daily payment trends (last 30 days)
+            'daily_trends': self._get_daily_payment_trends(),
+        })
+        
+        return context
+    
+    def _calculate_success_rate(self, payments):
+        """Calculate payment success rate"""
+        total = payments.count()
+        if total == 0:
+            return 0
+        successful = payments.filter(status='completed').count()
+        return round((successful / total) * 100, 2)
+    
+    def _get_payment_method_stats(self):
+        """Get payment method statistics"""
+        return Payment.objects.filter(
+            status='completed'
+        ).values('payment_method').annotate(
+            count=Count('id'),
+            total_amount=Sum('amount')
+        ).order_by('-total_amount')
+    
+    def _get_daily_payment_trends(self):
+        """Get daily payment trends for the last 30 days"""
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(days=30)
+        
+        return Payment.objects.filter(
+            created_at__date__range=[start_date, end_date],
+            status='completed'
+        ).extra(
+            select={'day': 'date(created_at)'}
+        ).values('day').annotate(
+            count=Count('id'),
+            amount=Sum('amount')
+        ).order_by('day')

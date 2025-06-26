@@ -20,7 +20,7 @@ from .serializers import (
 )
 from .filters import NotificationFilter
 from utils.permissions import IsOwnerOrAdmin
-from utils.pagination import StandardResultsSetPagination
+# from utils.pagination import StandardResultsSetPagination
 
 
 class NotificationListView(generics.ListAPIView):
@@ -28,7 +28,7 @@ class NotificationListView(generics.ListAPIView):
     
     serializer_class = NotificationListSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = StandardResultsSetPagination
+    # pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = NotificationFilter
     search_fields = ['title', 'message']
@@ -316,7 +316,7 @@ class NotificationLogListView(generics.ListAPIView):
     queryset = NotificationLog.objects.all().select_related('notification')
     serializer_class = NotificationLogSerializer
     permission_classes = [permissions.IsAdminUser]
-    pagination_class = StandardResultsSetPagination
+    # pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['channel', 'status', 'notification__notification_type']
     search_fields = ['notification__title', 'error_message']
